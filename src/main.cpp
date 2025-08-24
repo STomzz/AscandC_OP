@@ -14,7 +14,7 @@ extern void reduce_custom_do(uint32_t blockDim, void *l2ctrl, void *stream, uint
 int32_t main(int32_t argc, char *argv[])
 {
     /* 16*16 = 256 个 float16，总字节 = 256 * 2 = 512 */
-    constexpr uint32_t kElementNum = 64;
+    constexpr uint32_t kElementNum = 32;
     constexpr uint32_t kBlockDim   = 1;          // 单核即可
     constexpr size_t   kInputBytes = kElementNum * sizeof(uint16_t);
     constexpr size_t   kOutputBytes = 1 * sizeof(uint16_t);

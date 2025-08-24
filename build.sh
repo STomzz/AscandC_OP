@@ -97,7 +97,7 @@ rm -f ascendc_kernels_bbit
 cp ./out/bin/ascendc_kernels_bbit ./
 rm -rf input output
 mkdir -p input output
-python3 scripts/gen_data.py
+# python3 scripts/gen_data.py
 (
     export LD_LIBRARY_PATH=$(pwd)/out/lib:$(pwd)/out/lib64:${_ASCEND_INSTALL_PATH}/lib64:$LD_LIBRARY_PATH
     if [[ "$RUN_WITH_TOOLCHAIN" -eq 1 ]]; then
@@ -108,8 +108,8 @@ python3 scripts/gen_data.py
         elif [ "${RUN_MODE}" = "cpu" ]; then
             ./ascendc_kernels_bbit
         fi
-    else
-        ./ascendc_kernels_bbit
+    # else
+    #     ./ascendc_kernels_bbit
     fi
 )
 # md5sum output/*.bin
