@@ -108,8 +108,8 @@ mkdir -p input output
         elif [ "${RUN_MODE}" = "cpu" ]; then
             ./ascendc_kernels_bbit
         fi
-    # else
-    #     ./ascendc_kernels_bbit
+    else
+        ./ascendc_kernels_bbit
     fi
 )
 # md5sum output/*.bin

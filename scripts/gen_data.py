@@ -9,7 +9,8 @@ def gen_golden_data_simple(dtype):
     else:  # 默认fp32
         data_type = np.float32
 
-    input_x = np.random.uniform(1, 20, [32]).astype(data_type)
+    input_x = np.random.uniform(1, 20, [31]).astype(data_type)
+    input_x = np.append(input_x,np.array(40,dtype=data_type))
     golden = np.max(input_x).astype(data_type)
 
     input_x.tofile("/root/code/AscandC_op_test/data/input_x.bin")

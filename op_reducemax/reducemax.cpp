@@ -45,13 +45,6 @@ public:
         } else if constexpr (ComputeKey == REDUCE_TILING_2) {
             Compute2();//使用Ascand::Std::max手搓
         }
-        //  else if constexpr (ComputeKey == REDUCE_TILING_3) {
-        //     Compute3();//待定
-        // } else if constexpr (ComputeKey == REDUCE_TILING_4) {
-        //     Compute4();
-        // } else if constexpr (ComputeKey == REDUCE_TILING_5) {
-        //     Compute5();
-        // }
     }
 
     template<size_t ComputeKey = 0>
@@ -76,18 +69,18 @@ private:
     // Only WholeReduceSum is used under 256B.
     __aicore__ inline void Compute1()
     {
+        AscendC::printf("===use compute 1, datalength : %d ====\n",totalLength);
         AscendC::LocalTensor<DTYPE> xLocal = inQueueX.DeQue<DTYPE>(); //数据出队 inputQue -> xlocal
         AscendC::LocalTensor<DTYPE> zLocal = outQueueZ.AllocTensor<DTYPE>();    //outQue分配局部变量 zlocal
         AscendC::LocalTensor<DTYPE> workLocal = calcBuf.AllocTensor<DTYPE>();   //临时空间分配
-        //-------------debug------------        
-        // for(int i = 0;i<this->totalLength;i++){
-        //         AscendC::printf("Compute1: %d input: %f\n",AscendC::GetBlockIdx(),(DTYPE)xLocal.GetValue(i));
-        //     }
-        AscendC::printf("idx in Compute1: %d input: %f\n",AscendC::GetBlockIdx(),(half)xLocal.GetValue(0));
+        //-------------debug------------ √        
+        for(int i = 0;i<this->totalLength;i++){
+                AscendC::printf("Compute1: %d input: %f\n",i,(half)xLocal.GetValue(i));
+            }
+        AscendC::ReduceMax<DTYPE>(zLocal, xLocal, workLocal, totalLength,false); 
+        // AscendC::ReduceMax<DTYPE>(zLocal, xLocal, workLocal, totalLength); //调用ReduceMax接口(dst,src,workspace,length)
 
-        AscendC::ReduceMax<DTYPE>(zLocal, xLocal, workLocal, 128); //调用ReduceMax接口(dst,src,workspace,length)
-
-        //--------------debug------------
+        //--------------debug------------ ×
         AscendC::printf("ans in Compute1 : %d  ans[0] : %f\n",AscendC::GetBlockIdx(),(half)zLocal.GetValue(0));
 
 
@@ -98,6 +91,7 @@ private:
 
     __aicore__ inline void Compute2()
     {
+        AscendC::printf("use compute 2, datalength : %d",totalLength);
         AscendC::LocalTensor<DTYPE> xLocal = inQueueX.DeQue<DTYPE>(); //同上
         AscendC::LocalTensor<DTYPE> zLocal = outQueueZ.AllocTensor<DTYPE>();
         AscendC::LocalTensor<DTYPE> workLocal = calcBuf.AllocTensor<DTYPE>();
@@ -106,9 +100,9 @@ private:
         //         AscendC::printf("Compute1: %d input: %f\n",AscendC::GetBlockIdx(),(DTYPE)xLocal.GetValue(i));
         //     }
         // AscendC::Cast(workLocal,xLocal,0,totalLength);
-        AscendC::printf("idx in Compute2 %d input(DTYPE): %f\n",AscendC::GetBlockIdx(),(DTYPE)workLocal.GetValue(0));
+        // AscendC::printf("idx in Compute2 %d input(DTYPE): %f\n",AscendC::GetBlockIdx(),(DTYPE)workLocal.GetValue(0));
         DTYPE temp = xLocal.GetValue(0); //Register中申请的LocalTensor
-        for(int i = 0;i<128;i++){
+        for(int i = 0;i<totalLength;i++){
             temp = AscendC::Std::max(temp,xLocal.GetValue(i));//问题,使用的是half(float16),不支持> < max等比较符号 ,float类型执行错误
         }
         zLocal.SetValue(0,workLocal.GetValue(0));
@@ -128,7 +122,7 @@ private:
         AscendC::DataCopy(zGm, zLocal, this->outLength);
 
         //--------------debug------------
-        AscendC::printf("ans in CopyOut : %d  ans[0] : %d\n",AscendC::GetBlockIdx(),(DTYPE)zLocal.GetValue(0));
+        AscendC::printf("ans in CopyOut : %d  ans[0] : %d\n",AscendC::GetBlockIdx(),(half)zLocal.GetValue(0));
 
         outQueueZ.FreeTensor(zLocal);
     }
@@ -146,9 +140,9 @@ private:
 
 extern "C" __global__ __aicore__ void reduce_custom(GM_ADDR x, GM_ADDR z, GM_ADDR workspace, int32_t totalLength,int32_t outLength)
 {
-    KernelReduce<float> op; //<>选择类型
+    KernelReduce<half> op; //<>选择类型
     op.Init(x, z, totalLength, outLength);
-    op.Process<2>();//<>选择compute x
+    op.Process<1>();//<>选择compute x
 }
 
 // call of kernel function
